@@ -74,19 +74,19 @@ func  (jsResp *JsonRespFromAPI)  getPriceAVG() float64{
 
 }
 
-func  genJsonPriceResp(values [2]float64) (rClient JsonRespToClient ){
+func  genJsonPriceResp(values [2]int64) (rClient JsonRespToClient ){
 
 	if values[0] > values[1]{
-		rClient.Max = strconv.FormatFloat(values[0],'f',-1,64)
-		rClient.Min = strconv.FormatFloat(values[1],'f',-1,64)
+		rClient.Max = strconv.FormatInt(values[0],10)
+		rClient.Min = strconv.FormatInt(values[1],10)
 
 	}else{
-		rClient.Max = strconv.FormatFloat(values[1],'f',-1,64)
-		rClient.Min = strconv.FormatFloat(values[0],'f',-1,64)
+		rClient.Max = strconv.FormatInt(values[1],10)
+		rClient.Min = strconv.FormatInt(values[0],10)
 	}
 
 
-	rClient.Suggested = strconv.FormatFloat((values[0] + values[1] ) / 2,'f',-1,64)
+	rClient.Suggested = strconv.FormatInt((values[0] + values[1] ) / 2,10)
 
 	return
 
@@ -210,7 +210,7 @@ func main() {
 		/** TODO: se puede hacer algo mejor y mas exacto en donde consumeAPIMethod llama a su metodo destino hasta consumir el tatal de item para la categoria, o quizas el metodo llamante se podria llamar recursivamente
 
 		*/
-			var minMax [2]float64
+			var minMax [2]int64
 			apiResp := make(chan JsonRespFromAPI,2)
 
 			timeout := make(chan bool, 1)
@@ -228,8 +228,8 @@ func main() {
 
 
 						priceAvg := resp.getPriceAVG()
-						minMax[i] = priceAvg
-						fmt.Println(priceAvg)
+						minMax[i] =  int64(priceAvg)
+						//fmt.Println(priceAvg)
 						i++
 						if i == 2{ //
 							jsonPrice := genJsonPriceResp(minMax)
