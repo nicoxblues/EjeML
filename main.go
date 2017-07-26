@@ -195,7 +195,7 @@ func main() {
 	apiMl.initAPI()
 
 	router := gin.Default()
-	var count int64 = 0
+//	var count int64 = 0
 
 
 	//resulTotal :=  strconv.FormatInt(respondObj.Paging.Total - 1, 10)
@@ -205,7 +205,7 @@ func main() {
 
 		catID := c.Param("ID")
 		//c.String(http.StatusOK, "Hello %s", catID)
-		fmt.Println("llamda: "  + strconv.FormatInt(count,10))
+		//fmt.Println("llamda: "  + strconv.FormatInt(count,10))
 
 
 		blockChan := make(chan interface{})
@@ -226,8 +226,8 @@ func main() {
 				TODO:	o quizas el metodo llamante se podria llamar recursivamente
 
 			*/
-			apiMl.consumeAPIMethod("categories", catID, "search", "condition=new&sort=price_asc&limit="+MAXLIMITPAG, apiResp)
-			apiMl.consumeAPIMethod("categories", catID, "search", "condition=new&sort=price_desc&limit="+MAXLIMITPAG, apiResp)
+			 apiMl.consumeAPIMethod("categories", catID, "search", "condition=new&sort=price_asc&limit="+MAXLIMITPAG, apiResp)
+			 apiMl.consumeAPIMethod("categories", catID, "search", "condition=new&sort=price_desc&limit="+MAXLIMITPAG, apiResp)
 			close(apiResp)
 		}()
 
@@ -236,20 +236,20 @@ func main() {
 
 
 		go func() {
-			count++
+			//count++
 			var i int = 0
 			for {
 
 				select {
 				case resp := <-apiResp:
 
-					fmt.Printf("%v ya procese el json que me dio la api de ML \n",count)
+					//fmt.Printf("%v ya procese el json que me dio la api de ML \n",count)
 					priceAvg := resp.getPriceAVG()
 					minMax[i] =  int64(priceAvg)
 					//fmt.Println(priceAvg)
 					i++
 					if i == 2{ //
-						fmt.Printf("llamada : %v - ya procese ambos request desbloqueo la salida \n",count)
+						//fmt.Printf("llamada : %v - ya procese ambos request desbloqueo la salida \n",count)
 						jsonPrice := genJsonPriceResp(minMax)
 						blockChan <- jsonPrice
 						i = 0
@@ -257,7 +257,7 @@ func main() {
 
 				case <- timeout :
 					blockChan  <- JsonRespToClient{"0","0","0"}
-					fmt.Println("me case de esperar  ")
+					//fmt.Println("me case de esperar  ")
 
 				default:
 					time.Sleep(500 * time.Millisecond)
@@ -269,23 +269,6 @@ func main() {
 			}
 		}()
 
-
-
-
-
-
-		/*	for resp := range apiResp{
-					priceAvg := resp.getPriceAVG()
-					minMax[i] = priceAvg
-					i++
-					fmt.Println(priceAvg)
-
-				//c.String(http.StatusOK, "Hello %s", catID)
-			}*/
-
-
-
-		//}()
 
 		respServer := <- blockChan
 		fmt.Println(respServer)
