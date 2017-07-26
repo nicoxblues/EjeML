@@ -115,6 +115,7 @@ func (ml* APIML) consumeAPIMethod(requestType string,ID string,action string,ext
 
 	apiMethod := ml.api_Method[requestType]
 	// split params
+
 	mapParams := make(map[string]string)
 
 	for _, maper := range strings.Split(extraParam,"&") {
@@ -125,10 +126,10 @@ func (ml* APIML) consumeAPIMethod(requestType string,ID string,action string,ext
 
 	ml.urlInfoClient =  urlInfoClient{ID, action, mapParams}
 
-	apiChan,err := apiMethod.(func() (JsonRespFromAPI,error))()
-	if err == nil{
-		apiRespChan <- apiChan
-	}
+	apiChan := apiMethod.(func() (JsonRespFromAPI))()
+
+	apiRespChan <- apiChan
+
 
 
 
@@ -149,28 +150,30 @@ func getURL(infoCli urlInfoClient) (string){
 
 func getJsonForResponse (resp* http.Response) (respondObj*JsonRespFromAPI){
 	bResp, _ := ioutil.ReadAll(resp.Body)
-
 	json.Unmarshal(bResp, &respondObj)
-
 
 	return
 
 }
 
-func (ml* APIML) getInfoForCategory() (JsonRespFromAPI,error ){
+func (ml* APIML) getInfoForCategory() (JsonRespFromAPI ){
 	url := strings.Replace(getURL(ml.urlInfoClient),_REQUEST_TYPE,"category",-1)
-	for { // LA API pueda darme algun timeout
+	var apiJsonResp* JsonRespFromAPI
+
+	for { // LA API puede darme algun timeout
 		resp, err := http.Get(url)
+		fmt.Println("finish send "  + url)
 		if err != nil {
 			time.Sleep(500 * time.Millisecond) // espero un toque
 			//return JsonRespFromAPI{}, err
 
 		}else {
-			apiJsonResp := getJsonForResponse(resp)
-			return  *apiJsonResp, nil
+			apiJsonResp = getJsonForResponse(resp)
+			break
 		}
 
 	}
+	return  *apiJsonResp
 
 
 
@@ -192,66 +195,84 @@ func main() {
 	apiMl.initAPI()
 
 	router := gin.Default()
-
 	var count int64 = 0
+
 
 	//resulTotal :=  strconv.FormatInt(respondObj.Paging.Total - 1, 10)
 
 
 	router.GET("categories/:ID/prices/", func(c *gin.Context) {
+
 		catID := c.Param("ID")
 		//c.String(http.StatusOK, "Hello %s", catID)
-		fmt.Println("llaamda: "  + strconv.FormatInt(count,10))
-		count++
-	//	var jsonFinalRespond interface{}
+		fmt.Println("llamda: "  + strconv.FormatInt(count,10))
+
+
 		blockChan := make(chan interface{})
-		go func (){
-
-		/** TODO: se puede hacer algo mejor y mas exacto en donde consumeAPIMethod llama a su metodo destino hasta consumir el tatal de item para la categoria, o quizas el metodo llamante se podria llamar recursivamente
-
-		*/
-			var minMax [2]int64
-			apiResp := make(chan JsonRespFromAPI,2)
-
-			timeout := make(chan bool, 1)
-			go func() {
-				time.Sleep(5 * time.Second)
-				timeout <- true
-			}()
-
-			go func() {
-				var i int = 0
-				for {
-
-					select {
-					case resp := <-apiResp:
+		//go func (){
 
 
-						priceAvg := resp.getPriceAVG()
-						minMax[i] =  int64(priceAvg)
-						//fmt.Println(priceAvg)
-						i++
-						if i == 2{ //
-							jsonPrice := genJsonPriceResp(minMax)
-							blockChan <- jsonPrice
+		var minMax [2]int64
+		apiResp := make(chan JsonRespFromAPI,1)
+		timeout := make(chan bool, 1)
+		go func(){
+			time.Sleep(15 * time.Second)
+			timeout <- true
 
-		//					c.JSON(200, gin.H{"status": "you are logged in"} )
-						}
+		}()
 
-					case <- timeout :
-						blockChan  <- JsonRespToClient{"0","0","0"}
+		go func() {
+			/** TODO: se puede hacer algo mejor y mas exacto en donde consumeAPIMethod llama a su metodo destino hasta consumir el tatal de item para la categoria,
+				TODO:	o quizas el metodo llamante se podria llamar recursivamente
+
+			*/
+			apiMl.consumeAPIMethod("categories", catID, "search", "condition=new&sort=price_asc&limit="+MAXLIMITPAG, apiResp)
+			apiMl.consumeAPIMethod("categories", catID, "search", "condition=new&sort=price_desc&limit="+MAXLIMITPAG, apiResp)
+			close(apiResp)
+		}()
 
 
 
 
+
+		go func() {
+			count++
+			var i int = 0
+			for {
+
+				select {
+				case resp := <-apiResp:
+
+					fmt.Printf("%v ya procese el json que me dio la api de ML \n",count)
+					priceAvg := resp.getPriceAVG()
+					minMax[i] =  int64(priceAvg)
+					//fmt.Println(priceAvg)
+					i++
+					if i == 2{ //
+						fmt.Printf("llamada : %v - ya procese ambos request desbloqueo la salida \n",count)
+						jsonPrice := genJsonPriceResp(minMax)
+						blockChan <- jsonPrice
+						i = 0
 					}
+
+				case <- timeout :
+					blockChan  <- JsonRespToClient{"0","0","0"}
+					fmt.Println("me case de esperar  ")
+
+				default:
+					time.Sleep(500 * time.Millisecond)
 
 
 				}
-			}()
 
-			go apiMl.consumeAPIMethod("categories",catID, "search","condition=new&sort=price_asc&limit=" + MAXLIMITPAG, apiResp)
-			go apiMl.consumeAPIMethod("categories",catID, "search","condition=new&sort=price_desc&limit=" + MAXLIMITPAG, apiResp)
+
+			}
+		}()
+
+
+
+
+
 
 		/*	for resp := range apiResp{
 					priceAvg := resp.getPriceAVG()
@@ -264,10 +285,12 @@ func main() {
 
 
 
-		}()
+		//}()
 
 		respServer := <- blockChan
+		fmt.Println(respServer)
 		c.JSON(200, respServer)
+		fmt.Println("mande la info")
 
 	})
 
