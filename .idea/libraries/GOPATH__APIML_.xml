@@ -1,0 +1,27 @@
+<component name="libraryTable">
+  <library name="GOPATH &lt;APIML&gt;">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../bin" />
+      <root url="file://$PROJECT_DIR$/../github.com" />
+      <root url="file://$PROJECT_DIR$/../golang.org" />
+      <root url="file://$PROJECT_DIR$/../.idea" />
+      <root url="file://$PROJECT_DIR$/../turGo" />
+      <root url="file://$PROJECT_DIR$/../gopkg.in" />
+      <root url="file://$PROJECT_DIR$/../hhtPruebas" />
+      <root url="file://$PROJECT_DIR$/../CursoMercadoLibre" />
+    </CLASSES>
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/../bin" />
+      <root url="file://$PROJECT_DIR$/../github.com" />
+      <root url="file://$PROJECT_DIR$/../golang.org" />
+      <root url="file://$PROJECT_DIR$/../.idea" />
+      <root url="file://$PROJECT_DIR$/../turGo" />
+      <root url="file://$PROJECT_DIR$/../gopkg.in" />
+      <root url="file://$PROJECT_DIR$/../hhtPruebas" />
+      <root url="file://$PROJECT_DIR$/../CursoMercadoLibre" />
+    </SOURCES>
+    <excluded>
+      <root url="file://$PROJECT_DIR$" />
+    </excluded>
+  </library>
+</component>
